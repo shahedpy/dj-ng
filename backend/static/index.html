@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .auth-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .todo-form {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .todo-item {
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            background: white;
+        }
+        .todo-item.completed {
+            background: #f0f8f0;
+            opacity: 0.8;
+        }
+        .todo-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .todo-item.completed h3 {
+            text-decoration: line-through;
+        }
+        .priority-high { border-left: 4px solid #dc3545; }
+        .priority-medium { border-left: 4px solid #ffc107; }
+        .priority-low { border-left: 4px solid #28a745; }
+        .todo-actions {
+            margin-top: 10px;
+        }
+        .todo-actions button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Todo App</h1>
+        
+        <div id="auth-section" class="auth-section">
+            <h2>Authentication</h2>
+            <div id="auth-message"></div>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button onclick="login()">Login</button>
+            <button onclick="register()">Register</button>
+        </div>
+
+        <div id="todo-section" class="hidden">
+            <div class="todo-form">
+                <h2>Add New Todo</h2>
+                <div id="todo-message"></div>
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" placeholder="Enter todo title">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" placeholder="Enter description (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date:</label>
+                    <input type="datetime-local" id="due_date">
+                </div>
+                <button onclick="addTodo()">Add Todo</button>
+            </div>
+
+            <div class="todo-filters">
+                <button onclick="loadTodos()">All</button>
+                <button onclick="loadTodos('pending')">Pending</button>
+                <button onclick="loadTodos('completed')">Completed</button>
+            </div>
+
+            <div id="todos-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        const API_BASE = 'http://localhost:8000/api';
+
+        // Authentication functions
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user_id;
+                    showMessage('auth-message', 'Login successful!', 'success');
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('todo-section').classList.remove('hidden');
+                    loadTodos();
+                } else {
+                    showMessage('auth-message', data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showMessage('auth-message', 'Network error', 'error');
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/register/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('auth-message', 'Registration successful! Please login.', 'success');
+                } else {
+                    showMessage('auth-message', data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('auth-message', 'Network error', 'error');
+            }
+        }
+
+        // Todo functions
+        async function addTodo() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const priority = document.getElementById('priority').value;
+            const due_date = document.getElementById('due_date').value;
+            
+            if (!title.trim()) {
+                showMessage('todo-message', 'Title is required', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/todos/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        priority,
+                        due_date: due_date || null
+                    }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    showMessage('todo-message', 'Todo added successfully!', 'success');
+                    document.getElementById('title').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('due_date').value = '';
+                    loadTodos();
+                } else {
+                    showMessage('todo-message', 'Failed to add todo', 'error');
+                }
+            } catch (error) {
+                showMessage('todo-message', 'Network error', 'error');
+            }
+        }
+
+        async function loadTodos(filter = '') {
+            try {
+                let url = `${API_BASE}/todos/`;
+                if (filter) {
+                    url += `${filter}/`;
+                }
+                
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const todos = await response.json();
+                    displayTodos(todos);
+                } else {
+                    showMessage('todo-message', 'Failed to load todos', 'error');
+                }
+            } catch (error) {
+                showMessage('todo-message', 'Network error', 'error');
+            }
+        }
+
+        async function toggleTodo(id) {
+            try {
+                const response = await fetch(`${API_BASE}/todos/${id}/toggle_complete/`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    loadTodos();
+                } else {
+                    showMessage('todo-message', 'Failed to toggle todo', 'error');
+                }
+            } catch (error) {
+                showMessage('todo-message', 'Network error', 'error');
+            }
+        }
+
+        async function deleteTodo(id) {
+            if (confirm('Are you sure you want to delete this todo?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/todos/${id}/`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        loadTodos();
+                    } else {
+                        showMessage('todo-message', 'Failed to delete todo', 'error');
+                    }
+                } catch (error) {
+                    showMessage('todo-message', 'Network error', 'error');
+                }
+            }
+        }
+
+        function displayTodos(todos) {
+            const container = document.getElementById('todos-container');
+            container.innerHTML = '';
+            
+            todos.forEach(todo => {
+                const todoElement = document.createElement('div');
+                todoElement.className = `todo-item priority-${todo.priority} ${todo.completed ? 'completed' : ''}`;
+                
+                const dueDate = todo.due_date ? new Date(todo.due_date).toLocaleDateString() : 'No due date';
+                
+                todoElement.innerHTML = `
+                    <h3>${todo.title}</h3>
+                    <p>${todo.description || 'No description'}</p>
+                    <p><strong>Priority:</strong> ${todo.priority}</p>
+                    <p><strong>Due:</strong> ${dueDate}</p>
+                    <p><strong>Status:</strong> ${todo.completed ? 'Completed' : 'Pending'}</p>
+                    <div class="todo-actions">
+                        <button onclick="toggleTodo(${todo.id})">
+                            ${todo.completed ? 'Mark Pending' : 'Mark Complete'}
+                        </button>
+                        <button onclick="deleteTodo(${todo.id})" style="background: #dc3545;">Delete</button>
+                    </div>
+                `;
+                
+                container.appendChild(todoElement);
+            });
+        }
+
+        function showMessage(elementId, message, type) {
+            const messageElement = document.getElementById(elementId);
+            messageElement.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                messageElement.innerHTML = '';
+            }, 5000);
+        }
+
+        // Check if user is already authenticated on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // For demo purposes, we'll start with the login form
+            // In a real app, you'd check for existing session/token
+        });
+    </script>
+</body>
+</html>

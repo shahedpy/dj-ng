@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Django Server",
+			"type": "shell",
+			"command": "/Users/TPL/projects/web-apps/dj-ng/backend/venv/bin/python manage.py runserver",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
