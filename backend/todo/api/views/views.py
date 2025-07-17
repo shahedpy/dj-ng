@@ -6,11 +6,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
-from django.shortcuts import render
 from django.http import FileResponse
 from django.conf import settings
 import os
-from ...models.models import Todo
+
+# MODEL IMPORTS
+from todo.models.models import Todo
+
+# SERIALIZER IMPORTS
 from ..serializers.serializers import TodoSerializer
 
 
@@ -32,7 +35,8 @@ class TodoViewSet(viewsets.ModelViewSet):
         todo = self.get_object()
         todo.completed = not todo.completed
         todo.save()
-        return Response({'status': 'completed' if todo.completed else 'pending'})
+        return Response(
+            {'status': 'completed' if todo.completed else 'pending'})
 
     @action(detail=False, methods=['get'])
     def completed(self, request):
@@ -54,16 +58,22 @@ def create_user(request):
     password = request.data.get('password')
 
     if not username or not password:
-        return Response({'error': 'Username and password required'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'error': 'Username and password required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     if User.objects.filter(username=username).exists():
-        return Response({'error': 'Username already exists'}, 
-                       status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(
+            {'error': 'Username already exists'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     user = User.objects.create_user(username=username, password=password)
-    return Response({'message': 'User created successfully'}, 
-                   status=status.HTTP_201_CREATED)
+    return Response(
+        {'message': f'{user} created successfully'},
+        status=status.HTTP_201_CREATED
+    )
 
 
 @api_view(['POST'])
@@ -71,11 +81,13 @@ def create_user(request):
 def login_user(request):
     username = request.data.get('username')
     password = request.data.get('password')
-    
+
     user = authenticate(username=username, password=password)
     if user:
         login(request, user)
         return Response({'message': 'Login successful', 'user_id': user.id})
     else:
-        return Response({'error': 'Invalid credentials'}, 
-                       status=status.HTTP_401_UNAUTHORIZED)
+        return Response(
+            {'error': 'Invalid credentials'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
