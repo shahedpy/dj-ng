@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from todo.models import Todo
+from backend.todo.models.models import Todo
 from datetime import datetime, timedelta
 
 

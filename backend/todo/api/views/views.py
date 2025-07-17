@@ -10,7 +10,7 @@ from django.shortcuts import render
 from django.http import FileResponse
 from django.conf import settings
 import os
-from ...models import Todo
+from ...models.models import Todo
 from ..serializers.serializers import TodoSerializer
 
 
