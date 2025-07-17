@@ -10,8 +10,8 @@ from django.shortcuts import render
 from django.http import FileResponse
 from django.conf import settings
 import os
-from .models import Todo
-from .serializers import TodoSerializer
+from ...models import Todo
+from ..serializers.serializers import TodoSerializer
 
 
 def index(request):
@@ -52,11 +52,11 @@ class TodoViewSet(viewsets.ModelViewSet):
 def create_user(request):
     username = request.data.get('username')
     password = request.data.get('password')
-    
+
     if not username or not password:
         return Response({'error': 'Username and password required'}, 
                        status=status.HTTP_400_BAD_REQUEST)
-    
+
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username already exists'}, 
                        status=status.HTTP_400_BAD_REQUEST)
